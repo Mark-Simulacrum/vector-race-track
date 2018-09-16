@@ -3,9 +3,7 @@ extern crate wasm_bindgen;
 use std::f64::consts::PI;
 use std::fmt;
 use std::ops::{Add, Mul};
-use std::collections::BinaryHeap;
-use std::cmp::Reverse;
-use std::mem;
+use std::cmp;
 
 use wasm_bindgen::prelude::*;
 
@@ -19,29 +17,32 @@ mod step;
 use step::Step;
 
 struct StepStore {
-    steps: BinaryHeap<Reverse<Step>>,
+    steps: Vec<Vec<Step>>,
 }
 
 impl StepStore {
     fn new() -> StepStore {
         StepStore {
-            steps: BinaryHeap::new(),
+            steps: Vec::new(),
         }
     }
 
     fn retain<F: Fn(&Step) -> bool>(&mut self, f: F) {
-        let steps = mem::replace(&mut self.steps, BinaryHeap::new());
-        let mut steps = steps.into_vec();
-        steps.retain(|element| f(&element.0));
-        self.steps = BinaryHeap::from(steps);
+        for stepv in &mut self.steps {
+            stepv.retain(|element| f(&element));
+        }
     }
 
     fn push(&mut self, element: Step) {
-        self.steps.push(Reverse(element));
+        let insert_len = element.len();
+        while self.steps.get(insert_len).is_none() {
+            self.steps.push(Vec::new());
+        }
+        self.steps[insert_len].push(element);
     }
 
     fn pop(&mut self) -> Option<Step> {
-        self.steps.pop().map(|r| r.0)
+        self.steps.iter_mut().find(|e| !e.is_empty()).and_then(|e| e.pop())
     }
 }
 
