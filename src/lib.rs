@@ -9,12 +9,14 @@ use std::mem;
 
 use wasm_bindgen::prelude::*;
 
-const CELL_SIZE: i32 = 20;
+type Coord = i16;
+
+const CELL_SIZE: Coord = 20;
 
 mod step;
 use step::Step;
 
-pub fn compute_final_paths(first_root: Point, boundaries: &[(i32, i32)]) -> Vec<Vec<Point>> {
+pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> Vec<Vec<Point>> {
     let mut points = BinaryHeap::new();
     points.push(Reverse(Step::from_point(first_root)));
 
@@ -86,7 +88,7 @@ fn handle_vector(
     element: &Step,
     v: Vector2,
     total_points: &mut u64,
-    boundaries: &[(i32, i32)],
+    boundaries: &[(Coord, Coord)],
 ) {
     match is_vector_valid(boundaries, element.position(), v) {
         Ok(()) => {
@@ -120,7 +122,7 @@ fn handle_vector(
     }
 }
 
-fn is_vector_valid(boundaries: &[(i32, i32)], root: Point, v: Vector2) -> Result<(), Segment> {
+fn is_vector_valid(boundaries: &[(Coord, Coord)], root: Point, v: Vector2) -> Result<(), Segment> {
     let mut last_boundary = boundaries.last().cloned().unwrap();
     for &boundary in boundaries {
         let segment = Segment {
@@ -144,8 +146,8 @@ fn is_vector_valid(boundaries: &[(i32, i32)], root: Point, v: Vector2) -> Result
 
 #[derive(PartialEq, Copy, Clone)]
 pub struct Point {
-    pub x: i32,
-    pub y: i32,
+    pub x: Coord,
+    pub y: Coord,
 }
 
 impl fmt::Debug for Point {
@@ -165,10 +167,10 @@ impl Add<Vector2> for Point {
     }
 }
 
-impl Mul<i32> for Vector2 {
+impl Mul<Coord> for Vector2 {
     type Output = Vector2;
 
-    fn mul(self, other: i32) -> Vector2 {
+    fn mul(self, other: Coord) -> Vector2 {
         Vector2 {
             x: self.x * other,
             y: self.y * other,
@@ -213,8 +215,8 @@ impl Segment {
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Vector2 {
-    x: i32,
-    y: i32,
+    x: Coord,
+    y: Coord,
 }
 
 impl fmt::Debug for Vector2 {
@@ -248,7 +250,7 @@ pub struct Universe {
     pub width: usize,
     pub height: usize,
     ctx: CanvasRenderingContext2D,
-    boundaries: Vec<(i32, i32)>,
+    boundaries: Vec<(Coord, Coord)>,
 }
 
 #[wasm_bindgen]
@@ -293,15 +295,15 @@ impl Universe {
         self.ctx.set_stroke_style("#CCCCCC");
 
         // vertical lines
-        for i in 0..=self.width as i32 {
+        for i in 0..=self.width as Coord {
             self.ctx.move_to(i * CELL_SIZE, 0);
-            self.ctx.line_to(i * CELL_SIZE, CELL_SIZE * self.height as i32);
+            self.ctx.line_to(i * CELL_SIZE, CELL_SIZE * self.height as Coord);
         }
 
         // horizontal lines
-        for i in 0..=self.height as i32 {
+        for i in 0..=self.height as Coord {
             self.ctx.move_to(0, i * CELL_SIZE);
-            self.ctx.line_to(CELL_SIZE * self.width as i32, i * CELL_SIZE);
+            self.ctx.line_to(CELL_SIZE * self.width as Coord, i * CELL_SIZE);
         }
 
         self.ctx.stroke();
@@ -355,9 +357,9 @@ extern "C" {
     #[wasm_bindgen(method, setter = strokeStyle)]
     fn set_stroke_style(this: &CanvasRenderingContext2D, style: &str);
     #[wasm_bindgen(method, js_name = moveTo)]
-    fn move_to(this: &CanvasRenderingContext2D, x: i32, y: i32);
+    fn move_to(this: &CanvasRenderingContext2D, x: Coord, y: Coord);
     #[wasm_bindgen(method, js_name = lineTo)]
-    fn line_to(this: &CanvasRenderingContext2D, x: i32, y: i32);
+    fn line_to(this: &CanvasRenderingContext2D, x: Coord, y: Coord);
     #[wasm_bindgen(method)]
     fn arc(
         this: &CanvasRenderingContext2D,
