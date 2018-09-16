@@ -13,6 +13,8 @@ type Coord = i16;
 
 const CELL_SIZE: Coord = 20;
 
+mod list;
+use list::List;
 mod step;
 use step::Step;
 
@@ -93,7 +95,7 @@ fn handle_vector(
     match is_vector_valid(boundaries, element.position(), v) {
         Ok(()) => {
             *total_points += 1;
-            points.push(Reverse(element.clone().with_vector(v)));
+            points.push(Reverse(element.with_vector(v)));
         }
         Err(segment) => {
             let end = Segment {
@@ -116,7 +118,7 @@ fn handle_vector(
                     *points = BinaryHeap::from(pointv);
                 }
                 *min_distance = cmp::min(*min_distance, element.len());
-                final_paths.push(element.clone().into_points());
+                final_paths.push(element.with_vector(v).into_points());
             }
         }
     }
@@ -186,7 +188,7 @@ struct Rectangle {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-struct Segment {
+pub struct Segment {
     from: Point,
     to: Point,
 }
@@ -215,8 +217,8 @@ impl Segment {
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Vector2 {
-    x: Coord,
-    y: Coord,
+    pub x: Coord,
+    pub y: Coord,
 }
 
 impl fmt::Debug for Vector2 {
@@ -226,7 +228,7 @@ impl fmt::Debug for Vector2 {
 }
 
 impl Vector2 {
-    fn anchor_at(self, p: Point) -> Segment {
+    pub fn anchor_at(self, p: Point) -> Segment {
         Segment {
             from: p,
             to: p + self,
@@ -328,9 +330,9 @@ impl Universe {
         for path in &points {
             let mut prev_pos = first_root;
             for &cur_pos in path {
-                let step = Vector2 { x: prev_pos.x - cur_pos.x, y: prev_pos.y - cur_pos.y };
+                let step = Vector2 { x: cur_pos.x - prev_pos.x, y: cur_pos.y - prev_pos.y };
                 (step * CELL_SIZE).draw(
-                    cur_pos,
+                    Point { x: prev_pos.x * CELL_SIZE, y: prev_pos.y * CELL_SIZE },
                     &mut self.ctx,
                     "red",
                 );

@@ -26,10 +26,10 @@ pub fn main() {
         (24, 30), // finish (31, 30) -> (24, 30)
     ];
     for x in 6..=9 {
-        let root = Point { x, y: 29 };
+        let root = Point { x, y: 30 };
         let start = Instant::now();
         let paths = vector_track::compute_final_paths(root, &boundaries);
-        eprintln!("took {:?} for x={}; {} paths, with length={}",
-            start.elapsed(), x, paths.len(), paths[0].len());
+        eprintln!("took {:?} for x={}; {} paths, with length={:?}",
+            start.elapsed(), x, paths.len(), paths.get(0).map(|p| p.len()));
     }
 }

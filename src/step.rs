@@ -1,30 +1,31 @@
 use std::cmp::Ordering;
-use {Point, Vector2};
+use {List, Point, Vector2};
 
 #[derive(Clone, Debug)]
 pub struct Step {
-    points: Vec<Point>,
+    points: List<Point>,
 }
 
 impl Step {
-    pub fn with_vector(mut self, vector: Vector2) -> Self {
+    #[must_use]
+    pub fn with_vector(&self, vector: Vector2) -> Self {
         let position = self.position();
-        self.points.push(position + vector);
         Step {
-            points: self.points,
+            points: self.points.push(position + vector),
         }
     }
 
     pub fn from_point(pt: Point) -> Self {
         Step {
-            points: vec![pt],
+            points: List::new().push(pt),
         }
     }
 
     pub fn last_vector(&self) -> Option<Vector2> {
-        let mut pts_rev = self.points.iter().rev();
-        let last_point = pts_rev.next().unwrap();
-        let prev_last_point = pts_rev.next()?;
+        let mut pts = self.points();
+
+        let last_point = pts.next()?;
+        let prev_last_point = pts.next()?;
         Some(Vector2 {
             x: last_point.x - prev_last_point.x,
             y: last_point.y - prev_last_point.y,
@@ -32,26 +33,29 @@ impl Step {
     }
 
     pub fn len(&self) -> usize {
-        self.points.len()
+        self.points.iter().count()
     }
 
     pub fn points(&self) -> impl Iterator<Item=Point> + '_ {
-        self.points.iter().cloned()
+        self.points.iter()
     }
 
     pub fn into_points(self) -> Vec<Point> {
-        self.points
+        let mut pts: Vec<_> = self.points.iter().collect();
+        // the points are stored in reverse order
+        pts.reverse();
+        pts
     }
 
     pub fn position(&self) -> Point {
-        *self.points.last().unwrap()
+        self.points.iter().next().unwrap()
     }
 }
 
 impl Eq for Step {}
 impl PartialEq for Step {
     fn eq(&self, other: &Self) -> bool {
-        self.points.len() == other.points.len() && self.position() == other.position()
+        self.len() == other.len() && self.position() == other.position()
     }
 }
 
@@ -63,8 +67,6 @@ impl PartialOrd for Step {
 
 impl Ord for Step {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.points.len().cmp(&other.points.len())
+        self.len().cmp(&other.len())
     }
 }
-
-
