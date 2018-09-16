@@ -4,7 +4,7 @@ use std::f64::consts::PI;
 use std::fmt;
 use std::ops::{Add, Mul};
 use std::collections::BinaryHeap;
-use std::cmp::{self, Reverse};
+use std::cmp::Reverse;
 use std::mem;
 
 use wasm_bindgen::prelude::*;
@@ -18,14 +18,41 @@ use list::List;
 mod step;
 use step::Step;
 
+struct StepStore {
+    steps: BinaryHeap<Reverse<Step>>,
+}
+
+impl StepStore {
+    fn new() -> StepStore {
+        StepStore {
+            steps: BinaryHeap::new(),
+        }
+    }
+
+    fn retain<F: Fn(&Step) -> bool>(&mut self, f: F) {
+        let steps = mem::replace(&mut self.steps, BinaryHeap::new());
+        let mut steps = steps.into_vec();
+        steps.retain(|element| f(&element.0));
+        self.steps = BinaryHeap::from(steps);
+    }
+
+    fn push(&mut self, element: Step) {
+        self.steps.push(Reverse(element));
+    }
+
+    fn pop(&mut self) -> Option<Step> {
+        self.steps.pop().map(|r| r.0)
+    }
+}
+
 pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> Vec<Vec<Point>> {
-    let mut points = BinaryHeap::new();
-    points.push(Reverse(Step::from_point(first_root)));
+    let mut points = StepStore::new();
+    points.push(Step::from_point(first_root));
 
     let mut min_distance = usize::max_value();
     let mut total_points = 0;
     let mut final_paths = Vec::new();
-    while let Some(Reverse(element)) = points.pop() {
+    while let Some(element) = points.pop() {
         // Skip elements who length is greater than the minimum length found
         if element.len() >= min_distance {
             continue;
@@ -84,7 +111,7 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> 
 }
 
 fn handle_vector(
-    points: &mut BinaryHeap<Reverse<Step>>,
+    points: &mut StepStore,
     final_paths: &mut Vec<Vec<Point>>,
     min_distance: &mut usize,
     element: &Step,
@@ -95,7 +122,7 @@ fn handle_vector(
     match is_vector_valid(boundaries, element.position(), v) {
         Ok(()) => {
             *total_points += 1;
-            points.push(Reverse(element.with_vector(v)));
+            points.push(element.with_vector(v));
         }
         Err(segment) => {
             let end = Segment {
@@ -111,13 +138,8 @@ fn handle_vector(
             if segment == end {
                 if element.len() < *min_distance {
                     *min_distance = element.len();
-                    let mut pointv = mem::replace(points, BinaryHeap::new()).into_vec();
-                    pointv.retain(|element| {
-                        element.0.len() < *min_distance
-                    });
-                    *points = BinaryHeap::from(pointv);
+                    points.retain(|element| element.len() < *min_distance);
                 }
-                *min_distance = cmp::min(*min_distance, element.len());
                 final_paths.push(element.with_vector(v).into_points());
             }
         }
