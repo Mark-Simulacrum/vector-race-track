@@ -30,6 +30,6 @@ pub fn main() {
         let start = Instant::now();
         let paths = vector_track::compute_final_paths(root, &boundaries);
         eprintln!("took {:?} for x={}; {} paths, with length={:?}",
-            start.elapsed(), x, paths.len(), paths.get(0).map(|p| p.len()));
+            start.elapsed(), x, paths.len(), paths.get(0).map(|p| (p.len(), p)));
     }
 }

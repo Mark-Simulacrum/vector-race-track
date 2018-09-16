@@ -2,8 +2,8 @@ extern crate wasm_bindgen;
 
 use std::f64::consts::PI;
 use std::fmt;
-use std::ops::{Add, Mul};
 use std::cmp;
+use std::ops::{Add, Mul};
 
 use wasm_bindgen::prelude::*;
 
@@ -17,24 +17,31 @@ mod step;
 use step::Step;
 
 struct StepStore {
+    min_distance: usize,
     steps: Vec<Vec<Step>>,
 }
 
 impl StepStore {
     fn new() -> StepStore {
         StepStore {
+            min_distance: usize::max_value(),
             steps: Vec::new(),
         }
     }
 
-    fn retain<F: Fn(&Step) -> bool>(&mut self, f: F) {
-        for stepv in &mut self.steps {
-            stepv.retain(|element| f(&element));
+    fn apply_final_distance(&mut self, distance: usize) {
+        self.min_distance = cmp::min(self.min_distance, distance);
+        if self.min_distance < self.steps.len() {
+            self.steps.drain(distance..);
         }
     }
 
     fn push(&mut self, element: Step) {
         let insert_len = element.len();
+        if insert_len >= self.min_distance {
+            // no need to insert, this is too long anyway
+            return;
+        }
         while self.steps.get(insert_len).is_none() {
             self.steps.push(Vec::new());
         }
@@ -50,14 +57,8 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> 
     let mut points = StepStore::new();
     points.push(Step::from_point(first_root));
 
-    let mut min_distance = usize::max_value();
-    let mut total_points = 0;
     let mut final_paths = Vec::new();
     while let Some(element) = points.pop() {
-        // Skip elements who length is greater than the minimum length found
-        if element.len() >= min_distance {
-            continue;
-        }
         let min = -40;
         let max = -min;
 
@@ -78,10 +79,8 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> 
                     handle_vector(
                         &mut points,
                         &mut final_paths,
-                        &mut min_distance,
                         &element,
                         v,
-                        &mut total_points,
                         &boundaries,
                     );
                 }
@@ -96,10 +95,8 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> 
                     handle_vector(
                         &mut points,
                         &mut final_paths,
-                        &mut min_distance,
                         &element,
                         v,
-                        &mut total_points,
                         &boundaries,
                     );
                 }
@@ -107,22 +104,18 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> 
         }
     }
 
-    eprintln!("pushed {} points", total_points);
     final_paths
 }
 
 fn handle_vector(
     points: &mut StepStore,
     final_paths: &mut Vec<Vec<Point>>,
-    min_distance: &mut usize,
     element: &Step,
     v: Vector2,
-    total_points: &mut u64,
     boundaries: &[(Coord, Coord)],
 ) {
     match is_vector_valid(boundaries, element.position(), v) {
         Ok(()) => {
-            *total_points += 1;
             points.push(element.with_vector(v));
         }
         Err(segment) => {
@@ -137,10 +130,7 @@ fn handle_vector(
                 },
             };
             if segment == end {
-                if element.len() < *min_distance {
-                    *min_distance = element.len();
-                    points.retain(|element| element.len() < *min_distance);
-                }
+                points.apply_final_distance(element.len());
                 final_paths.push(element.with_vector(v).into_points());
             }
         }
