@@ -4,25 +4,26 @@ use std::f64::consts::PI;
 use std::fmt;
 use std::ops::{Add, Mul};
 use std::collections::BinaryHeap;
-use std::cmp::{self, Ordering, Reverse};
+use std::cmp::{self, Reverse};
 use std::mem;
 
 use wasm_bindgen::prelude::*;
 
 const CELL_SIZE: i32 = 20;
 
+mod step;
+use step::Step;
+
 pub fn compute_final_paths(first_root: Point, boundaries: &[(i32, i32)]) -> Vec<Vec<Point>> {
     let mut points = BinaryHeap::new();
-    points.push(Reverse(Step {
-        points: vec![first_root],
-    }));
+    points.push(Reverse(Step::from_point(first_root)));
 
     let mut min_distance = usize::max_value();
     let mut total_points = 0;
     let mut final_paths = Vec::new();
     while let Some(Reverse(element)) = points.pop() {
         // Skip elements who length is greater than the minimum length found
-        if element.points.len() >= min_distance {
+        if element.len() >= min_distance {
             continue;
         }
         let min = -40;
@@ -35,8 +36,8 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(i32, i32)]) -> Vec<
                     // zero vectors can't help us
                     if v.x == 0 && v.y == 0 { continue; }
 
-                    for &position in &element.points {
-                        if position == (*element.points.last().unwrap() + v) {
+                    for position in element.points() {
+                        if position == (element.position() + v) {
                             // we've already visited this point
                             continue 'dy;
                         }
@@ -104,16 +105,16 @@ fn handle_vector(
                 },
             };
             if segment == end {
-                if element.points.len() < *min_distance {
-                    *min_distance = element.points.len();
+                if element.len() < *min_distance {
+                    *min_distance = element.len();
                     let mut pointv = mem::replace(points, BinaryHeap::new()).into_vec();
                     pointv.retain(|element| {
-                        element.0.points.len() < *min_distance
+                        element.0.len() < *min_distance
                     });
                     *points = BinaryHeap::from(pointv);
                 }
-                *min_distance = cmp::min(*min_distance, element.points.len());
-                final_paths.push(element.points.clone());
+                *min_distance = cmp::min(*min_distance, element.len());
+                final_paths.push(element.clone().into_points());
             }
         }
     }
@@ -140,55 +141,6 @@ fn is_vector_valid(boundaries: &[(i32, i32)], root: Point, v: Vector2) -> Result
     }
     Ok(())
 }
-
-#[derive(Clone, Debug)]
-struct Step {
-    points: Vec<Point>,
-}
-
-impl Step {
-    fn with_vector(mut self, vector: Vector2) -> Self {
-        let position = self.position();
-        self.points.push(position + vector);
-        Step {
-            points: self.points,
-        }
-    }
-
-    fn last_vector(&self) -> Option<Vector2> {
-        let mut pts_rev = self.points.iter().rev();
-        let last_point = pts_rev.next().unwrap();
-        let prev_last_point = pts_rev.next()?;
-        Some(Vector2 {
-            x: last_point.x - prev_last_point.x,
-            y: last_point.y - prev_last_point.y,
-        })
-    }
-
-    fn position(&self) -> Point {
-        *self.points.last().unwrap()
-    }
-}
-
-impl Eq for Step {}
-impl PartialEq for Step {
-    fn eq(&self, other: &Self) -> bool {
-        self.points.len() == other.points.len() && self.position() == other.position()
-    }
-}
-
-impl PartialOrd for Step {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Step {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.points.len().cmp(&other.points.len())
-    }
-}
-
 
 #[derive(PartialEq, Copy, Clone)]
 pub struct Point {
