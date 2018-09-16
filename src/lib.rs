@@ -69,13 +69,6 @@ pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> 
                     // zero vectors can't help us
                     if v.x == 0 && v.y == 0 { continue; }
 
-                    for position in element.points() {
-                        if position == (element.position() + v) {
-                            // we've already visited this point
-                            continue 'dy;
-                        }
-                    }
-
                     handle_vector(
                         &mut points,
                         &mut final_paths,
