@@ -3,7 +3,7 @@
 This is a simulation of a scenario representative of a very basic 'race track' in which a vehicle
 moves along some path. The limitations are:
  * Vehicle may start at any velocity
- * Vehicle may accelerate +/- 1 in each axis
+ * Vehicle may change velocity by -1, 0, +1 in each axis
  * Vehicle must stay within boundaries; it cannot touch them
 
 This simulation of the scenario attempts to find the optimal paths through (currently) a brute-force
