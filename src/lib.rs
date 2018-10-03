@@ -132,6 +132,7 @@ fn handle_vector(
 
 fn is_vector_valid(boundaries: &[(Coord, Coord)], root: Point, v: Vector2) -> Result<(), Segment> {
     let mut last_boundary = boundaries.last().cloned().unwrap();
+    let anchored = v.anchor_at(root);
     for &boundary in boundaries {
         let segment = Segment {
             from: Point {
@@ -143,7 +144,6 @@ fn is_vector_valid(boundaries: &[(Coord, Coord)], root: Point, v: Vector2) -> Re
                 y: boundary.1,
             },
         };
-        let anchored = v.anchor_at(root);
         if anchored.intersects(segment) {
             return Err(segment);
         }
