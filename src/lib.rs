@@ -201,6 +201,19 @@ pub struct Segment {
 
 impl Segment {
     fn intersects(self, other: Self) -> bool {
+        // If our start and end lie to the left of the start and end x on the other segment, there
+        // is no way that the two intersect
+        if self.from.x < other.from.x && self.from.x < other.to.x &&
+            self.to.x < other.from.x && self.to.x < other.to.x {
+            return false;
+        }
+
+        // Same as before, except with y.
+        if self.from.y < other.from.y && self.from.y < other.to.y &&
+            self.to.y < other.from.y && self.to.y < other.to.y {
+            return false;
+        }
+
         // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
         let x1 = self.from.x;
         let y1 = self.from.y;
