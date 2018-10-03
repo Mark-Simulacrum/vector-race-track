@@ -228,9 +228,8 @@ impl Segment {
         let u1 = (x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3);
         let u2 = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
-        let t = t1 as f64 / t2 as f64;
-        let u = -1.0 * u1 as f64 / u2 as f64;
-        0.0 <= t && t <= 1.0 && 0.0 <= u && u <= 1.0
+        t1.abs() <= t2.abs() && t1.signum() == t2.signum() &&
+        u1.abs() <= u2.abs() && u1.signum() != u2.signum()
     }
 }
 
