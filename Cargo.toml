@@ -11,3 +11,4 @@ wasm-bindgen = { version = "0.2", features = ["spans", "std"] }
 
 [profile.release]
 debug = true
+lto = true
