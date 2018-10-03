@@ -7,14 +7,17 @@
                 width: 100%;
                 height: 100%;
                 display: flex;
-                flex-direction: row;
+                flex-direction: column;
                 align-items: center;
-                justify-content: space-around;
                 padding: 0;
                 margin: 0;
             }
             * {
                 box-sizing: border-box;
+            }
+
+            p {
+                margin: 1em;
             }
 
             canvas {
@@ -23,6 +26,12 @@
         </style>
     </head>
     <body>
+        <p>
+            See code and more information <a
+                href="https://github.com/Mark-Simulacrum/vector-race-track">here</a>. This simulates the
+            first "exploration" from David Poole's <i>Linear Algebra: A Modern Introduction, 4th
+                edition</i>. This simulation will take around 30-60 seconds to load.
+        </p>
         <canvas id="rust-canvas"></canvas>
         <script src='./index.js'></script>
     </body>
