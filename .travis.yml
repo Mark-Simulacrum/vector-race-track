@@ -2,6 +2,9 @@ language: rust
 rust:
  - nightly
 
+cache:
+ - ~/.cargo
+
 install:
  - nvm install node
  - cargo install wasm-bindgen-cli
