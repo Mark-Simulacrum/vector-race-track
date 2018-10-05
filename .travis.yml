@@ -7,13 +7,13 @@ install:
  - cargo install wasm-bindgen-cli
  - rustup target add wasm32-unknown-unknown
  - npm install
- - npm install yarn webpack-cli
+ - npm install webpack-cli
 
 script:
  - mkdir dist
  - cargo build --release --target wasm32-unknown-unknown
  - wasm-bindgen --browser --no-typescript ./target/wasm32-unknown-unknown/release/vector_track.wasm --out-dir .
- - yarn run webpack-cli
+ - npm run webpack-cli
  - cp index.html dist/
 
 deploy:
