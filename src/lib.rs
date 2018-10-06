@@ -187,13 +187,6 @@ impl Mul<Coord> for Vector2 {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-struct Rectangle {
-    base_a: Point,
-    base_b: Point,
-    height: f64,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Segment {
     from: Point,
     to: Point,
@@ -201,16 +194,23 @@ pub struct Segment {
 
 impl Segment {
     fn intersects(self, other: Self) -> bool {
-        // If our start and end lie to the left of the start and end x on the other segment, there
-        // is no way that the two intersect
-        if self.from.x < other.from.x && self.from.x < other.to.x &&
-            self.to.x < other.from.x && self.to.x < other.to.x {
+        // Left edge of self is to the right of other's right edge
+        if cmp::min(self.from.x, self.to.x) > cmp::max(other.from.x, other.to.x) {
             return false;
         }
 
-        // Same as before, except with y.
-        if self.from.y < other.from.y && self.from.y < other.to.y &&
-            self.to.y < other.from.y && self.to.y < other.to.y {
+        // Right edge of self is to the left of other's left edge
+        if cmp::max(self.from.x, self.to.x) < cmp::min(other.from.x, other.to.x) {
+            return false;
+        }
+
+        // Top edge of self is below other's bottom edge
+        if cmp::min(self.from.y, self.to.y) > cmp::max(other.from.y, other.to.y) {
+            return false;
+        }
+
+        // Bottom edge of self is above other's top edge
+        if cmp::max(self.from.y, self.to.y) < cmp::min(other.from.y, other.to.y) {
             return false;
         }
 
