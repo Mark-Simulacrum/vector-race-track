@@ -7,7 +7,7 @@ authors = ["Mark Simulacrum <mark.simulacrum@gmail.com>"]
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-wasm-bindgen = { version = "0.2", features = ["spans", "std"] }
+wasm-bindgen = { version = "0.2", default-features = false, features = ["std"] }
 
 [profile.release]
 debug = true
