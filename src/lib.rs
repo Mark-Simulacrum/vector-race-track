@@ -12,9 +12,9 @@ type Coord = i16;
 const CELL_SIZE: Coord = 20;
 
 mod list;
-use list::List;
+use self::list::List;
 mod step;
-use step::Step;
+use self::step::Step;
 
 struct StepStore {
     min_distance: usize,

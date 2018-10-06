@@ -1,9 +1,9 @@
 use std::cmp::Ordering;
-use {List, Point, Vector2};
+use crate::{List, Point, Vector2};
 
 #[derive(Clone, Debug)]
 pub struct Step {
-    l: usize,
+    length: usize,
     points: List<Point>,
 }
 
@@ -12,7 +12,7 @@ impl Step {
     pub fn with_vector(&self, vector: Vector2) -> Self {
         let position = self.position();
         Step {
-            l: self.l + 1,
+            length: self.length + 1,
             points: self.points.push(position + vector),
         }
     }
@@ -20,7 +20,7 @@ impl Step {
     pub fn from_point(pt: Point) -> Self {
         Step {
             points: List::new().push(pt),
-            l: 1,
+            length: 1,
         }
     }
 
@@ -36,7 +36,7 @@ impl Step {
     }
 
     pub fn len(&self) -> usize {
-        self.l
+        self.length
     }
 
     pub fn points(&self) -> impl Iterator<Item=Point> + '_ {

@@ -25,6 +25,7 @@ pub fn main() {
         (31, 30),
         (24, 30), // finish (31, 30) -> (24, 30)
     ];
+    let overall_start = Instant::now();
     for x in 6..=9 {
         let root = Point { x, y: 30 };
         let start = Instant::now();
@@ -32,4 +33,5 @@ pub fn main() {
         eprintln!("took {:?} for x={}; {} paths, with length={:?}",
             start.elapsed(), x, paths.len(), paths.get(0).map(|p| (p.len(), p)));
     }
+    eprintln!("total time: {:?}", overall_start.elapsed());
 }
