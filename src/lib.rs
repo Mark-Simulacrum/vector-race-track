@@ -16,6 +16,58 @@ use self::list::List;
 mod step;
 use self::step::Step;
 
+pub struct Boundaries {
+    boundaries: Vec<Segment>,
+}
+
+impl Boundaries {
+    pub fn new() -> Boundaries {
+        let boundaries = [
+            (20, 29),
+            (16, 23),
+            (16, 19),
+            (13, 17),
+            (10, 19),
+            (10, 31),
+            (5, 31), // start
+            (5, 20),
+            (6, 17),
+            (8, 14),
+            (12, 12),
+            (16, 13),
+            (19, 15),
+            (21, 22),
+            (24, 25),
+            (29, 26),
+            (31, 30),
+            (24, 30), // finish (31, 30) -> (24, 30)
+        ];
+        let mut segments = Vec::new();
+        let mut last_boundary = boundaries.last().cloned().unwrap();
+        for &boundary in &boundaries {
+            let segment = Segment {
+                from: Point {
+                    x: last_boundary.0,
+                    y: last_boundary.1,
+                },
+                to: Point {
+                    x: boundary.0,
+                    y: boundary.1,
+                },
+            };
+            segments.push(segment);
+            last_boundary = boundary;
+        }
+        Boundaries {
+            boundaries: segments,
+        }
+    }
+
+    fn iter<'a>(&'a self) -> impl Iterator<Item=Segment> + 'a {
+        self.boundaries.iter().cloned()
+    }
+}
+
 struct StepStore {
     min_distance: usize,
     steps: Vec<Vec<Step>>,
@@ -53,7 +105,7 @@ impl StepStore {
     }
 }
 
-pub fn compute_final_paths(first_root: Point, boundaries: &[(Coord, Coord)]) -> Vec<Vec<Point>> {
+pub fn compute_final_paths(first_root: Point, boundaries: &Boundaries) -> Vec<Vec<Point>> {
     let mut points = StepStore::new();
     points.push(Step::from_point(first_root));
 
@@ -105,7 +157,7 @@ fn handle_vector(
     final_paths: &mut Vec<Vec<Point>>,
     element: &Step,
     v: Vector2,
-    boundaries: &[(Coord, Coord)],
+    boundaries: &Boundaries,
 ) {
     match is_vector_valid(boundaries, element.position(), v) {
         Ok(()) => {
@@ -130,24 +182,12 @@ fn handle_vector(
     }
 }
 
-fn is_vector_valid(boundaries: &[(Coord, Coord)], root: Point, v: Vector2) -> Result<(), Segment> {
-    let mut last_boundary = boundaries.last().cloned().unwrap();
+fn is_vector_valid(boundaries: &Boundaries, root: Point, v: Vector2) -> Result<(), Segment> {
     let anchored = v.anchor_at(root);
-    for &boundary in boundaries {
-        let segment = Segment {
-            from: Point {
-                x: last_boundary.0,
-                y: last_boundary.1,
-            },
-            to: Point {
-                x: boundary.0,
-                y: boundary.1,
-            },
-        };
+    for segment in boundaries.iter() {
         if anchored.intersects(segment) {
             return Err(segment);
         }
-        last_boundary = boundary;
     }
     Ok(())
 }
@@ -270,7 +310,7 @@ pub struct Universe {
     pub width: usize,
     pub height: usize,
     ctx: CanvasRenderingContext2D,
-    boundaries: Vec<(Coord, Coord)>,
+    boundaries: Boundaries,
 }
 
 #[wasm_bindgen]
@@ -280,26 +320,7 @@ impl Universe {
             height: 60,
             width: 60,
             ctx,
-            boundaries: vec![
-                (20, 29),
-                (16, 23),
-                (16, 19),
-                (13, 17),
-                (10, 19),
-                (10, 31),
-                (5, 31), // start
-                (5, 20),
-                (6, 17),
-                (8, 14),
-                (12, 12),
-                (16, 13),
-                (19, 15),
-                (21, 22),
-                (24, 25),
-                (29, 26),
-                (31, 30),
-                (24, 30), // finish (31, 30) -> (24, 30)
-            ],
+            boundaries: Boundaries::new(),
         }
     }
 
@@ -335,8 +356,8 @@ impl Universe {
 
         self.ctx.move_to(24 * CELL_SIZE, 30 * CELL_SIZE);
 
-        for boundary in &self.boundaries {
-            self.ctx.line_to(boundary.0 * CELL_SIZE, boundary.1 * CELL_SIZE);
+        for boundary in self.boundaries.iter() {
+            self.ctx.line_to(boundary.to.x * CELL_SIZE, boundary.to.y * CELL_SIZE);
         }
 
         self.ctx.stroke();
