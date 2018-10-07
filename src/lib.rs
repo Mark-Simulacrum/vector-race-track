@@ -1,8 +1,11 @@
+use std::alloc::System;
+
+#[global_allocator]
+static GLOBAL: System = System;
 extern crate wasm_bindgen;
 
 use std::f64::consts::PI;
-use std::fmt;
-use std::cmp;
+use std::{cmp, fmt};
 use std::ops::{Add, Mul};
 
 use wasm_bindgen::prelude::*;
@@ -18,6 +21,7 @@ use self::step::Step;
 
 pub struct Boundaries {
     boundaries: Vec<Segment>,
+    end: Segment,
 }
 
 impl Boundaries {
@@ -58,12 +62,35 @@ impl Boundaries {
             segments.push(segment);
             last_boundary = boundary;
         }
+
+        let end = Segment {
+            from: Point {
+                x: 31,
+                y: 30,
+            },
+            to: Point {
+                x: 24,
+                y: 30,
+            },
+        };
+
         Boundaries {
+            end,
             boundaries: segments,
         }
     }
 
-    fn iter<'a>(&'a self) -> impl Iterator<Item=Segment> + 'a {
+    fn intersects(&self, needle: Segment) -> Option<bool> {
+        for segment in self.boundaries.iter().cloned() {
+            if needle.intersects(segment) {
+                return Some(segment == self.end);
+            }
+        }
+
+        None
+    }
+
+    fn segments<'a>(&'a self) -> impl Iterator<Item=Segment> + 'a {
         self.boundaries.iter().cloned()
     }
 }
@@ -159,37 +186,18 @@ fn handle_vector(
     v: Vector2,
     boundaries: &Boundaries,
 ) {
-    match is_vector_valid(boundaries, element.position(), v) {
-        Ok(()) => {
-            points.push(element.with_vector(v));
-        }
-        Err(segment) => {
-            let end = Segment {
-                from: Point {
-                    x: 31,
-                    y: 30,
-                },
-                to: Point {
-                    x: 24,
-                    y: 30,
-                },
-            };
-            if segment == end {
+    let needle = v.anchor_at(element.position());
+    match boundaries.intersects(needle) {
+        Some(is_end) => {
+            if is_end {
                 points.apply_final_distance(element.len());
                 final_paths.push(element.with_vector(v).into_points());
             }
         }
-    }
-}
-
-fn is_vector_valid(boundaries: &Boundaries, root: Point, v: Vector2) -> Result<(), Segment> {
-    let anchored = v.anchor_at(root);
-    for segment in boundaries.iter() {
-        if anchored.intersects(segment) {
-            return Err(segment);
+        None => {
+            points.push(element.with_vector(v));
         }
     }
-    Ok(())
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -233,6 +241,18 @@ pub struct Segment {
 }
 
 impl Segment {
+    pub fn from_pair(p1: Point, p2: Point) -> Self {
+        Segment { from: p1, to: p2 }
+    }
+
+    pub fn left(self) -> Coord {
+        cmp::min(self.from.x, self.to.x)
+    }
+
+    pub fn right(self) -> Coord {
+        cmp::max(self.from.x, self.to.x)
+    }
+
     fn intersects(self, other: Self) -> bool {
         // Left edge of self is to the right of other's right edge
         if cmp::min(self.from.x, self.to.x) > cmp::max(other.from.x, other.to.x) {
@@ -356,7 +376,7 @@ impl Universe {
 
         self.ctx.move_to(24 * CELL_SIZE, 30 * CELL_SIZE);
 
-        for boundary in self.boundaries.iter() {
+        for boundary in self.boundaries.segments() {
             self.ctx.line_to(boundary.to.x * CELL_SIZE, boundary.to.y * CELL_SIZE);
         }
 
