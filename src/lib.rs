@@ -5,7 +5,7 @@ static GLOBAL: System = System;
 extern crate wasm_bindgen;
 
 use std::f64::consts::PI;
-use std::{cmp, fmt};
+use std::{cmp, fmt, mem};
 use std::ops::{Add, Mul};
 
 use wasm_bindgen::prelude::*;
@@ -111,7 +111,7 @@ impl StepStore {
     fn apply_final_distance(&mut self, distance: usize) {
         self.min_distance = cmp::min(self.min_distance, distance);
         if self.min_distance < self.steps.len() {
-            self.steps.drain(distance..);
+            self.steps.drain(self.min_distance..);
         }
     }
 
@@ -127,8 +127,8 @@ impl StepStore {
         self.steps[insert_len].push(element);
     }
 
-    fn pop(&mut self) -> Option<Step> {
-        self.steps.iter_mut().find(|e| !e.is_empty()).and_then(|e| e.pop())
+    fn pop(&mut self) -> Option<Vec<Step>> {
+        self.steps.iter_mut().find(|e| !e.is_empty()).map(|e| mem::replace(e, Vec::new()))
     }
 }
 
@@ -137,40 +137,44 @@ pub fn compute_final_paths(first_root: Point, boundaries: &Boundaries) -> Vec<Ve
     points.push(Step::from_point(first_root));
 
     let mut final_paths = Vec::new();
+    let mut i = 0;
     while let Some(element) = points.pop() {
-        let min = -40;
-        let max = -min;
+        for element in element {
+            i += 1;
+            let min = -40;
+            let max = -min;
 
-        if let Some(pv) = element.last_vector() {
-            for dx in -1..=1 {
-                'dy: for dy in -1..=1 {
-                    let v = Vector2 { x: pv.x + dx, y: pv.y + dy };
-                    // zero vectors can't help us
-                    if v.x == 0 && v.y == 0 { continue; }
+            if let Some(pv) = element.last_vector() {
+                for dx in -1..=1 {
+                    'dy: for dy in -1..=1 {
+                        let v = Vector2 { x: pv.x + dx, y: pv.y + dy };
+                        // zero vectors can't help us
+                        if v.x == 0 && v.y == 0 { continue; }
 
-                    handle_vector(
-                        &mut points,
-                        &mut final_paths,
-                        &element,
-                        v,
-                        &boundaries,
-                    );
+                        handle_vector(
+                            &mut points,
+                            &mut final_paths,
+                            &element,
+                            v,
+                            &boundaries,
+                        );
+                    }
                 }
-            }
-        } else {
-            for dx in min..=max {
-                'p: for dy in min..=max {
-                    let v = Vector2 {
-                        x: dx,
-                        y: dy,
-                    };
-                    handle_vector(
-                        &mut points,
-                        &mut final_paths,
-                        &element,
-                        v,
-                        &boundaries,
-                    );
+            } else {
+                for dx in min..=max {
+                    'p: for dy in min..=max {
+                        let v = Vector2 {
+                            x: dx,
+                            y: dy,
+                        };
+                        handle_vector(
+                            &mut points,
+                            &mut final_paths,
+                            &element,
+                            v,
+                            &boundaries,
+                        );
+                    }
                 }
             }
         }
@@ -188,12 +192,15 @@ fn handle_vector(
 ) {
     let needle = v.anchor_at(element.position());
     match boundaries.intersects(needle) {
-        Some(is_end) => {
-            if is_end {
-                points.apply_final_distance(element.len());
-                final_paths.push(element.with_vector(v).into_points());
-            }
+        // Complete path, hit the end
+        Some(true) => {
+            let path = element.with_vector(v).into_points();
+            // Clear out all paths which are longer. They can't be shorter than this one.
+            points.apply_final_distance(path.len());
+            final_paths.push(path);
         }
+        // Dead path, hit a wall
+        Some(false) => {}
         None => {
             points.push(element.with_vector(v));
         }
